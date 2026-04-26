@@ -19,20 +19,33 @@ Premium-grade analytics for your full family mutual fund portfolio, built free a
 - ⚖️ **Allocation Drift** (à la ET Money Genius) — vs your target asset allocation, with rebalance amounts
 - 🔄 **SIP Health** — active/cancelled SIPs, days since last instalment, stale-SIP alerts
 - 📤 **Excel + JSON export** — full state, re-importable so you don't re-parse PDFs each time
+- 💿 **Database persistence** — save portfolios to SQLite (default) or PostgreSQL; reload anytime without re-parsing PDFs
 
 Built for India: Lakh/Crore formatting, FY 2024-25 tax regime by default, post-July 2024 LTCG rules.
 
 ---
 
-## Quick start (local)
+## Quick start
 
 ```bash
-unzip mf_dashboard_v2.zip && cd mf_dashboard_v2
 pip install -r requirements.txt
 streamlit run app.py
 ```
 
 Opens at `http://localhost:8501`.
+
+## Database configuration
+
+By default the app uses **SQLite** and creates `mf_dashboard.db` in the project directory — no configuration needed.
+
+For **PostgreSQL**, copy the example env file and fill in your connection string:
+
+```bash
+cp .env.example .env
+# edit .env and set DATABASE_URL=postgresql://user:pass@host:5432/dbname
+```
+
+SQLite works out of the box. PostgreSQL is ideal for multi-user or production deployments.
 
 ## Workflow
 
@@ -43,10 +56,9 @@ Opens at `http://localhost:8501`.
 
 2. **Upload** them in the sidebar. Multiple files combine automatically. Encrypted PDFs work — pass the PAN as password.
 
-3. **Analyze** in the 9 tabs:
-   - 🏠 Overview · 👥 Family · 🏢 By AMC · 📋 Schemes · 💼 Capital Gains · 🎯 Tax Preview · ⚖️ Allocation · 🔄 SIP Health · 💸 Cash Flows · 📤 Export
+3. **Analyze** across 10 tabs: Overview · Family · By AMC · Schemes · Capital Gains · Tax Preview · Allocation · SIP Health · Cash Flows · Export
 
-4. **Export** an Excel workbook (multi-sheet, ITR-ready) or a JSON state snapshot for fast reload next time.
+4. **Persist** — save portfolios to the database from the Export tab, or download Excel/JSON for offline use.
 
 ---
 
@@ -76,25 +88,24 @@ Stamp duty and STT are added to the cost basis of the lot they pair with on the 
 2. Go to [share.streamlit.io](https://share.streamlit.io) → **New app** → point to your repo, main file `app.py`
 3. Get a public URL like `https://yourname-mf-v2.streamlit.app`
 
-### Render
+> **Note:** Community Cloud is single-user by default. For multi-user access or database persistence, deploy to Render, Hugging Face Spaces, or a VPS.
 
-Build: `pip install -r requirements.txt`  
-Start: `streamlit run app.py --server.port=$PORT --server.address=0.0.0.0`
+### Render (free tier)
+
+- Build command: `pip install -r requirements.txt`
+- Start command: `streamlit run app.py --server.port=$PORT --server.address=0.0.0.0`
+- For PostgreSQL persistence, add a `.env` secret with your `DATABASE_URL`
 
 ### Docker
 
-```dockerfile
-FROM python:3.11-slim
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-COPY . .
-EXPOSE 8501
-CMD ["streamlit", "run", "app.py", "--server.address=0.0.0.0", "--server.port=8501"]
-```
-
 ```bash
 docker build -t mf-dashboard . && docker run -p 8501:8501 mf-dashboard
+```
+
+To use PostgreSQL in Docker, pass the connection string:
+
+```bash
+docker run -p 8501:8501 -e DATABASE_URL="postgresql://user:pass@host:5432/db" mf-dashboard
 ```
 
 ### Bare VPS
@@ -103,7 +114,7 @@ docker build -t mf-dashboard . && docker run -p 8501:8501 mf-dashboard
 streamlit run app.py --server.port 8501 --server.address 0.0.0.0
 ```
 
-For production, run behind nginx with TLS.
+For production, run behind nginx with TLS termination.
 
 ---
 
@@ -111,12 +122,14 @@ For production, run behind nginx with TLS.
 
 ```
 mf_dashboard_v2/
-├── app.py                # Streamlit UI (9 tabs)
+├── app.py                # Streamlit UI (10 tabs)
 ├── cas_parser.py         # PDF parser — captures units, price, SIP status
 ├── analytics.py          # FIFO capital gains, tax, drift, SIP analysis
+├── database.py           # SQLAlchemy ORM — models, CRUD, session utilities
+├── db_config.py         # Database config — SQLite default, PostgreSQL support
 ├── requirements.txt
 ├── Dockerfile
-├── README.md
+├── .env.example         # Template for DATABASE_URL
 └── .streamlit/config.toml
 ```
 
@@ -124,10 +137,10 @@ mf_dashboard_v2/
 
 ## Privacy
 
-- Files are processed **in the Python session memory** only
-- No persistence to disk on the server
-- JSON state snapshots can stay on **your** computer
-- For maximum privacy with financial data, run locally or on a VPS only you control
+- Files are processed **in Python session memory** only by default
+- SQLite database (`mf_dashboard.db`) is local to the machine running the app
+- For maximum privacy with financial data, run locally or on a VPS you control
+- No telemetry, no external API calls, no data leaves your server
 
 ---
 

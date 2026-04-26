@@ -1,10 +1,44 @@
+# Environment and secrets
+.env
+.streamlit/secrets.toml
+secrets.yaml
+config.yaml
+
+# Python bytecode
 __pycache__/
-*.pyc
+*.py[cod]
 *.pyo
+*.pyd
+.Python
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+*.egg
+*.whl
+
+# Virtual environments
 .venv/
 venv/
-.env
-.DS_Store
+ENV/
+env/
+
+# IDE
+.idea/
+.vscode/
 *.swp
-.streamlit/secrets.toml
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs and app data
 *.log
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+.streamlit/.cache

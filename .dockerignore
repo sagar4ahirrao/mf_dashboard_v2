@@ -1,0 +1,61 @@
+# Git and version control
+.git
+.gitignore
+
+# Python cache
+__pycache__
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+*.egg
+
+# Virtual environments
+.venv
+venv
+ENV
+env
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation
+*.md
+!requirements.txt
+
+# App data and secrets
+.env
+.streamlit/secrets.toml
+secrets.yaml
+config.yaml
+*.log
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+.streamlit/.cache
+
+# Docker
+.dockerignore
+Dockerfile
+
+# CI/CD
+.github
+.gitlab-ci.yml
+travis.yml
+
+# Tests
+tests
+test*
+.pytest_cache
+.coverage
+htmlcov

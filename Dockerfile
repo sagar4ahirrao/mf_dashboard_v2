@@ -2,9 +2,8 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# System deps for pdfplumber (needs poppler for some edge cases)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
+    gcc poppler-utils \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .

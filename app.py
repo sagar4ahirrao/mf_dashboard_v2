@@ -27,9 +27,16 @@ from analytics import (
     simulate_full_redemption_tax, compute_drift, analyze_sips,
     canonical_holder_per_pan,
 )
+from database import init_db, get_db, save_portfolio, list_portfolios, load_portfolio, delete_portfolio, portfolio_to_session_state
 
 
 # ==================== Page setup ====================
+if "db_initialized" not in st.session_state:
+    try:
+        init_db()
+    except Exception:
+        pass
+st.session_state.db_initialized = True
 st.set_page_config(
     page_title="MF Portfolio Dashboard",
     page_icon="📊",
@@ -450,6 +457,42 @@ with st.sidebar:
         for fname, cas in st.session_state.parsed_files:
             st.caption(f"📄 **{fname[:35]}**")
             st.caption(f"  {cas.email} · {len(cas.schemes)} schemes")
+
+    st.divider()
+    st.markdown("### 💾 Saved Portfolios")
+    try:
+        session = get_db()
+        portfolios = list_portfolios(session)
+        session.close()
+        if portfolios:
+            for p in portfolios:
+                cols = st.columns([3, 1, 1])
+                cols[0].caption(f"📁 {p.name} ({len(p.schemes)} schemes)")
+                if cols[1].button("Load", key=f"load_{p.id}"):
+                    session = get_db()
+                    full = load_portfolio(session, p.id)
+                    if full:
+                        state = portfolio_to_session_state(full)
+                        st.session_state.parsed_files = state["parsed_files"]
+                        st.session_state.pan_holders = state["pan_holders"]
+                        if state["tax_rates"]:
+                            tr = st.session_state.tax_rates
+                            tr.equity_ltcg_rate = state["tax_rates"].get("equity_ltcg_rate", tr.equity_ltcg_rate)
+                            tr.equity_ltcg_exemption = state["tax_rates"].get("equity_ltcg_exemption", tr.equity_ltcg_exemption)
+                            tr.equity_stcg_rate = state["tax_rates"].get("equity_stcg_rate", tr.equity_stcg_rate)
+                            tr.debt_ltcg_rate = state["tax_rates"].get("debt_ltcg_rate", tr.debt_ltcg_rate)
+                            tr.debt_stcg_slab = state["tax_rates"].get("debt_stcg_slab", tr.debt_stcg_slab)
+                        st.session_state.allocation_targets = state["allocation_targets"] or st.session_state.allocation_targets
+                        st.session_state.scheme_overrides = state["scheme_overrides"] or st.session_state.scheme_overrides
+                        st.rerun()
+                if cols[2].button("Del", key=f"del_{p.id}"):
+                    session = get_db()
+                    delete_portfolio(session, p.id)
+                    st.rerun()
+        else:
+            st.caption("No saved portfolios yet.")
+    except Exception as e:
+        st.caption(f"DB not available: {e}")
 
 
 # ==================== Main: empty state ====================
@@ -1055,9 +1098,9 @@ with tabs[8]:
 # -------------------- 10. EXPORT --------------------
 with tabs[9]:
     st.markdown("### Export Your Portfolio")
-    st.caption("Take your data with you — Excel for analysis, JSON to skip re-parsing PDFs next time.")
+    st.caption("Take your data with you — save to local database, export Excel, or JSON snapshot.")
 
-    e1, e2 = st.columns(2)
+    e1, e2, e3 = st.columns(3)
     with e1:
         st.markdown("#### 📊 Excel Workbook")
         st.markdown("Multi-sheet workbook: per-PAN, per-AMC, per-scheme, asset allocation, "
@@ -1086,6 +1129,34 @@ with tabs[9]:
                 mime="application/json",
                 use_container_width=True,
             )
+    with e3:
+        st.markdown("#### 💿 Save to Database")
+        st.markdown("Persist portfolio to SQLite/PostgreSQL. Re-load anytime without re-parsing PDFs.")
+        portfolio_name = st.text_input("Portfolio name", value=f"Portfolio {date.today().isoformat()}",
+                                     key="db_portfolio_name", label_visibility="collapsed")
+        if st.button("Save to DB", type="primary", use_container_width=True,
+                    disabled=not st.session_state.parsed_files):
+            try:
+                session = get_db()
+                tax_rates_dict = {
+                    "equity_ltcg_rate": st.session_state.tax_rates.equity_ltcg_rate,
+                    "equity_ltcg_exemption": st.session_state.tax_rates.equity_ltcg_exemption,
+                    "equity_stcg_rate": st.session_state.tax_rates.equity_stcg_rate,
+                    "debt_ltcg_rate": st.session_state.tax_rates.debt_ltcg_rate,
+                    "debt_stcg_slab": st.session_state.debt_slab / 100,
+                    "equity_holding_threshold_days": st.session_state.tax_rates.equity_holding_threshold_days,
+                    "debt_holding_threshold_days": st.session_state.tax_rates.debt_holding_threshold_days,
+                }
+                save_portfolio(
+                    session, portfolio_name,
+                    st.session_state.parsed_files, tax_rates_dict,
+                    st.session_state.allocation_targets, st.session_state.scheme_overrides,
+                    st.session_state.pan_holders,
+                )
+                st.success("Saved to database!")
+                st.rerun()
+            except Exception as e:
+                st.error(f"Save failed: {e}")
 
 
 # Footer
