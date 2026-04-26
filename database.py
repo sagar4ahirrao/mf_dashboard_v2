@@ -126,8 +126,6 @@ class CasFile(Base):
 
     portfolio = relationship("Portfolio", foreign_keys=[portfolio_id], back_populates="cas_files")
 
-    schemes = relationship("Scheme", foreign_keys=[cas_file_id])
-
 
 _engine: Optional[Engine] = None
 _SessionFactory: Optional[sessionmaker] = None
