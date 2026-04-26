@@ -415,7 +415,7 @@ with st.sidebar:
                         placeholder="Usually your PAN")
 
     cc1, cc2 = st.columns(2)
-    if cc1.button("Parse", type="primary", use_container_width=True, disabled=not uploaded):
+    if cc1.button("Parse", type="primary", width="stretch", disabled=not uploaded):
         new_list = []
         for f in uploaded:
             try:
@@ -437,7 +437,7 @@ with st.sidebar:
             st.session_state.pan_holders = canonical_holder_per_pan(schemes)
             st.rerun()
 
-    if cc2.button("Clear", use_container_width=True, disabled=not st.session_state.parsed_files):
+    if cc2.button("Clear", width="stretch", disabled=not uploaded):
         st.session_state.parsed_files = []
         st.session_state.pan_holders = {}
         st.rerun()
@@ -446,7 +446,7 @@ with st.sidebar:
     st.markdown("##### Or load saved state")
     json_file = st.file_uploader("JSON state", type=["json"], key="json_uploader",
                                   label_visibility="collapsed")
-    if json_file and st.button("Load JSON", use_container_width=True):
+    if json_file and st.button("Load JSON", width="stretch"):
         try:
             import_state_json(json_file.read())
             st.success("Loaded!")
@@ -461,10 +461,10 @@ with st.sidebar:
         - **CAMS+KFintech**: The detailed CAS covers both; single statement is sufficient
         - **Scanned PDFs**: Not supported — request text-based CAS from the registrar
         """)
-        if st.button("🗑️ Clear PDF cache", use_container_width=True):
+        if st.button("🗑️ Clear PDF cache", width="stretch"):
             st.cache_data.clear()
             st.success("Cache cleared. Try parsing again.")
-        if st.button("↻ Reload PDFs", use_container_width=True, disabled=not uploaded):
+        if st.button("↻ Reload PDFs", width="stretch", disabled=not uploaded):
             new_list = []
             for f in uploaded:
                 try:
@@ -639,7 +639,7 @@ with tabs[0]:
                      color_discrete_sequence=["#2563eb", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"])
         fig.update_traces(textposition="outside", textinfo="label+percent")
         fig.update_layout(showlegend=False, height=380, margin=dict(l=10, r=10, t=10, b=10))
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
     with col2:
         st.markdown("#### Sub-Category Breakdown")
         sc = df.groupby("Sub_Category").agg(MV=("Market_Value", "sum")).reset_index().sort_values("MV", ascending=True)
@@ -649,7 +649,7 @@ with tabs[0]:
                                 textposition="outside"))
         fig.update_layout(height=380, margin=dict(l=10, r=10, t=10, b=10),
                           xaxis=dict(title="Market Value (₹)", tickformat=",.0f"))
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     st.markdown("#### Family Treemap (gain-coloured)")
     tm = df.groupby(["Holder", "AMC", "Asset_Class"]).agg(
@@ -663,7 +663,7 @@ with tabs[0]:
                      hover_data={"Cost": ":,.0f", "MV": ":,.0f", "Gain_Pct": ":+.2f"})
     fig.update_traces(textinfo="label+value+percent parent")
     fig.update_layout(height=520, margin=dict(l=10, r=10, t=10, b=10))
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
 
 # -------------------- 2. FAMILY (BY PAN) --------------------
@@ -679,7 +679,7 @@ with tabs[1]:
     pan_summary = pan_summary.sort_values("Market_Value", ascending=False)
 
     st.markdown("#### Per-PAN Summary")
-    st.dataframe(pan_summary, use_container_width=True, hide_index=True,
+    st.dataframe(pan_summary, width="stretch", hide_index=True,
         column_config={
             "Cost": st.column_config.NumberColumn("Cost (₹)", format="%.0f"),
             "Market_Value": st.column_config.NumberColumn("MV (₹)", format="%.0f"),
@@ -697,7 +697,7 @@ with tabs[1]:
         fig.update_layout(height=350, showlegend=False,
                           margin=dict(l=10, r=10, t=10, b=10),
                           yaxis=dict(tickformat=",.0f"))
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
     with col2:
         st.markdown("##### XIRR by PAN")
         chart = pan_summary.dropna(subset=["XIRR_Pct"]).copy()
@@ -708,7 +708,7 @@ with tabs[1]:
                                 textposition="outside"))
         fig.update_layout(height=350, margin=dict(l=10, r=10, t=10, b=10),
                           yaxis=dict(title="XIRR (%)"))
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     st.markdown("#### PAN × AMC Detail")
     pa_xirrs = aggregate_xirr(filtered_schemes, lambda s: (s.pan, s.amc))
@@ -719,7 +719,7 @@ with tabs[1]:
     pa["Gain"] = pa["Market_Value"] - pa["Cost"]
     pa["Abs_Return_Pct"] = (pa["Market_Value"] / pa["Cost"] - 1) * 100
     pa["XIRR_Pct"] = pa.apply(lambda r: pa_xirrs.get((r["PAN"], r["AMC"])), axis=1)
-    st.dataframe(pa, use_container_width=True, hide_index=True,
+    st.dataframe(pa, width="stretch", hide_index=True,
         column_config={
             "Cost": st.column_config.NumberColumn("Cost (₹)", format="%.0f"),
             "Market_Value": st.column_config.NumberColumn("MV (₹)", format="%.0f"),
@@ -740,7 +740,7 @@ with tabs[2]:
     amc_summary["Abs_Return_Pct"] = (amc_summary["Market_Value"] / amc_summary["Cost"] - 1) * 100
     amc_summary["XIRR_Pct"] = amc_summary["AMC"].map(amc_xirrs)
     amc_summary = amc_summary.sort_values("Market_Value", ascending=False)
-    st.dataframe(amc_summary, use_container_width=True, hide_index=True,
+    st.dataframe(amc_summary, width="stretch", hide_index=True,
         column_config={
             "Cost": st.column_config.NumberColumn("Cost (₹)", format="%.0f"),
             "Market_Value": st.column_config.NumberColumn("MV (₹)", format="%.0f"),
@@ -755,7 +755,7 @@ with tabs[2]:
         fig = px.pie(amc_summary, values="Market_Value", names="AMC", hole=0.4)
         fig.update_traces(textposition="inside", textinfo="percent+label")
         fig.update_layout(height=400, margin=dict(l=10, r=10, t=10, b=10), showlegend=False)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
     with col2:
         st.markdown("##### XIRR by AMC")
         chart = amc_summary.dropna(subset=["XIRR_Pct"]).sort_values("XIRR_Pct")
@@ -766,7 +766,7 @@ with tabs[2]:
                                 textposition="outside"))
         fig.update_layout(height=400, margin=dict(l=10, r=10, t=10, b=10),
                           xaxis=dict(title="XIRR (%)"))
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
 
 # -------------------- 4. SCHEMES --------------------
@@ -777,7 +777,7 @@ with tabs[3]:
         show_df[["PAN", "Holder", "AMC", "Scheme", "Asset_Class", "Sub_Category",
                  "Cost", "Market_Value", "Gain", "Abs_Return_Pct", "XIRR_Pct",
                  "First_Investment", "SIP_Status", "Folio"]],
-        use_container_width=True, hide_index=True, height=480,
+        width="stretch", hide_index=True, height=480,
         column_config={
             "Cost": st.column_config.NumberColumn("Cost (₹)", format="%.0f"),
             "Market_Value": st.column_config.NumberColumn("MV (₹)", format="%.0f"),
@@ -834,7 +834,7 @@ with tabs[4]:
                 "Debt STCG": s.debt_stcg, "Debt LTCG": s.debt_ltcg,
                 "Total Tax": s.total_tax,
             } for fy, s in sorted(tax_summary.items())])
-            st.dataframe(tax_rows, use_container_width=True, hide_index=True,
+            st.dataframe(tax_rows, width="stretch", hide_index=True,
                          column_config={c: st.column_config.NumberColumn(c, format="%.0f")
                                         for c in tax_rows.columns if c != "FY"})
 
@@ -851,7 +851,7 @@ with tabs[4]:
                     "Asset": l.tax_category.title(),
                 } for l in all_realized])
                 st.dataframe(lots_df.sort_values(["FY", "Sell Date"], ascending=[False, False]),
-                             use_container_width=True, hide_index=True, height=400)
+                             width="stretch", hide_index=True, height=400)
                 csv = lots_df.to_csv(index=False).encode("utf-8")
                 st.download_button("⬇️ Download lot-level CSV", csv,
                                    "realized_gains.csv", "text/csv")
@@ -873,7 +873,7 @@ with tabs[4]:
                 "Cost": v["cost"], "Current Value": v["value"],
                 "Gain": v["gain"], "LTCG": v["ltcg"], "STCG": v["stcg"],
             } for k, v in ur_by_scheme.items()]).sort_values("Current Value", ascending=False)
-            st.dataframe(ur_df, use_container_width=True, hide_index=True, height=350,
+            st.dataframe(ur_df, width="stretch", hide_index=True, height=350,
                          column_config={c: st.column_config.NumberColumn(c, format="%.0f")
                                         for c in ["Cost", "Current Value", "Gain", "LTCG", "STCG"]})
 
@@ -930,7 +930,7 @@ with tabs[5]:
         {"Component": "Debt LTCG", "Gain": summary.debt_ltcg,
          "Taxable": summary.debt_ltcg, "Rate %": debt_ltcg_rate, "Tax": summary.debt_ltcg_tax},
     ])
-    st.dataframe(breakdown, use_container_width=True, hide_index=True,
+    st.dataframe(breakdown, width="stretch", hide_index=True,
                  column_config={c: st.column_config.NumberColumn(c, format="%.0f")
                                 for c in ["Gain", "Taxable", "Tax"]})
 
@@ -980,7 +980,7 @@ with tabs[6]:
     } for d in drift])
 
     st.markdown("#### Drift vs Target")
-    st.dataframe(drift_df, use_container_width=True, hide_index=True,
+    st.dataframe(drift_df, width="stretch", hide_index=True,
                  column_config={
                      "Current Value": st.column_config.NumberColumn(format="%.0f"),
                      "Current %": st.column_config.NumberColumn(format="%.2f%%"),
@@ -999,7 +999,7 @@ with tabs[6]:
                       margin=dict(l=10, r=10, t=10, b=10),
                       yaxis=dict(title="%"),
                       legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
     # Rebalance suggestions
     big_drifts = [d for d in drift if abs(d.drift_pct) > 2]
@@ -1045,7 +1045,7 @@ with tabs[7]:
 
         st.markdown("#### Active SIPs")
         st.dataframe(active.sort_values("Typical SIP ₹", ascending=False),
-                     use_container_width=True, hide_index=True,
+                     width="stretch", hide_index=True,
                      column_config={
                          "Typical SIP ₹": st.column_config.NumberColumn(format="%.0f"),
                          "Last SIP": st.column_config.DateColumn(),
@@ -1053,7 +1053,7 @@ with tabs[7]:
 
         if len(cancelled):
             st.markdown("#### Cancelled SIPs")
-            st.dataframe(cancelled, use_container_width=True, hide_index=True,
+            st.dataframe(cancelled, width="stretch", hide_index=True,
                          column_config={
                              "Typical SIP ₹": st.column_config.NumberColumn(format="%.0f"),
                              "Last SIP": st.column_config.DateColumn(),
@@ -1118,11 +1118,11 @@ with tabs[8]:
                                           side="right", tickformat=",.0f"),
                               legend=dict(orientation="h", yanchor="bottom",
                                           y=1.02, xanchor="right", x=1))
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
 
         with col2:
             st.markdown("#### Yearly")
-            st.dataframe(yearly, use_container_width=True, hide_index=True,
+            st.dataframe(yearly, width="stretch", hide_index=True,
                          column_config={
                              "Invested": st.column_config.NumberColumn(format="%.0f"),
                              "Redeemed": st.column_config.NumberColumn(format="%.0f"),
@@ -1140,7 +1140,7 @@ with tabs[9]:
         st.markdown("#### 📊 Excel Workbook")
         st.markdown("Multi-sheet workbook: per-PAN, per-AMC, per-scheme, asset allocation, "
                     "**realized gains by FY (ITR-format), unrealized gains, tax summary**.")
-        if st.button("Generate Excel", type="primary", use_container_width=True):
+        if st.button("Generate Excel", type="primary", width="stretch"):
             with st.spinner("Building workbook..."):
                 xlsx_bytes = export_excel()
             st.download_button(
@@ -1148,13 +1148,13 @@ with tabs[9]:
                 xlsx_bytes,
                 file_name=f"portfolio_{date.today().isoformat()}.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                use_container_width=True,
+                width="stretch",
             )
     with e2:
         st.markdown("#### 💾 JSON State Snapshot")
         st.markdown("Full parsed state including transactions and your settings (targets, tax rates). "
                     "Re-import without re-parsing PDFs.")
-        if st.button("Generate JSON", type="primary", use_container_width=True):
+        if st.button("Generate JSON", type="primary", width="stretch"):
             with st.spinner("Serializing..."):
                 json_bytes = export_state_json()
             st.download_button(
@@ -1162,15 +1162,15 @@ with tabs[9]:
                 json_bytes,
                 file_name=f"portfolio_state_{date.today().isoformat()}.json",
                 mime="application/json",
-                use_container_width=True,
+                width="stretch",
             )
     with e3:
         st.markdown("#### 💿 Save to Database")
         st.markdown("Persist portfolio to SQLite/PostgreSQL. Re-load anytime without re-parsing PDFs.")
         portfolio_name = st.text_input("Portfolio name", value=f"Portfolio {date.today().isoformat()}",
                                      key="db_portfolio_name", label_visibility="collapsed")
-        if st.button("Save to DB", type="primary", use_container_width=True,
-                    disabled=not st.session_state.parsed_files):
+        if st.button("Save to DB", type="primary", width="stretch",
+                    disabled=not uploaded):
             try:
                 session = get_db()
                 tax_rates_dict = {
