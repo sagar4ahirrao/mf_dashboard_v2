@@ -99,7 +99,7 @@ init_state()
 
 # ==================== Helpers ====================
 @st.cache_data(show_spinner=False)
-def parse_pdf_cached(file_bytes: bytes, file_name: str, password: str):
+def parse_pdf_cached(file_bytes: bytes, file_name: str, password: Optional[str]):
     cas = parse_cas(file_bytes, password=password or None, source_filename=file_name)
     return cas
 
@@ -424,8 +424,11 @@ with st.sidebar:
                     new_list.append((f.name, cas))
                     st.success(f"✓ {f.name[:30]} ({len(cas.schemes)} schemes)")
                 else:
-                    msg = "; ".join(cas.parse_warnings) or "No schemes"
-                    st.error(f"✗ {f.name[:30]}: {msg}")
+                    if cas.parse_warnings:
+                        msg = "\n".join(cas.parse_warnings)
+                        st.error(f"✗ {f.name[:30]}:\n{msg}")
+                    else:
+                        st.warning(f"⚠ {f.name[:30]}: No schemes found — is this a valid CAS PDF?")
             except Exception as e:
                 st.error(f"✗ {f.name[:30]}: {e}")
         if new_list:
@@ -450,6 +453,38 @@ with st.sidebar:
             st.rerun()
         except Exception as e:
             st.error(f"Load failed: {e}")
+
+    with st.expander("ℹ️ PDF parsing tips"):
+        st.markdown("""
+        - **Encrypted PDFs**: Use your PAN as password (uppercase)
+        - **Wrong CAS type**: Download "Detailed" CAS (PDF), not "Summary"
+        - **CAMS+KFintech**: The detailed CAS covers both; single statement is sufficient
+        - **Scanned PDFs**: Not supported — request text-based CAS from the registrar
+        """)
+        if st.button("🗑️ Clear PDF cache", use_container_width=True):
+            st.cache_data.clear()
+            st.success("Cache cleared. Try parsing again.")
+        if st.button("↻ Reload PDFs", use_container_width=True, disabled=not uploaded):
+            new_list = []
+            for f in uploaded:
+                try:
+                    cas = parse_pdf_cached(f.read(), f.name, pwd)
+                    if cas.schemes:
+                        new_list.append((f.name, cas))
+                        st.success(f"✓ {f.name[:30]} ({len(cas.schemes)} schemes)")
+                    else:
+                        if cas.parse_warnings:
+                            msg = "\n".join(cas.parse_warnings)
+                            st.error(f"✗ {f.name[:30]}:\n{msg}")
+                        else:
+                            st.warning(f"⚠ {f.name[:30]}: No schemes found — is this a valid CAS PDF?")
+                except Exception as e:
+                    st.error(f"✗ {f.name[:30]}: {e}")
+            if new_list:
+                st.session_state.parsed_files = new_list
+                schemes = all_schemes()
+                st.session_state.pan_holders = canonical_holder_per_pan(schemes)
+                st.rerun()
 
     if st.session_state.parsed_files:
         st.divider()
